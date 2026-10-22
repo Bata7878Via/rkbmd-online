@@ -15,8 +15,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS CDN (Engine Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <!-- Chart.js CDN (Diagram Bulat Interaktif) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         body { 
@@ -28,7 +26,6 @@
                 font-size: 15px !important;
             }
         }
-        /* Style kustom scrollbar modal */
         .custom-scroll::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -36,6 +33,14 @@
         .custom-scroll::-webkit-scrollbar-thumb {
             background-color: #cbd5e1;
             border-radius: 9999px;
+        }
+        /* Animasi transisi irisan diagram SVG */
+        .donut-segment {
+            transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease, stroke-width 0.2s ease;
+        }
+        .donut-segment:hover {
+            stroke-width: 24;
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -48,7 +53,7 @@
         </div>
         <div>
             <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-100">Informasi Sistem</h4>
-            <p id="toastMessage" class="text-sm font-semibold">Data berhasil disimpan dalam database</p>
+            <p id="toastMessage" class="text-sm font-semibold">Data berhasil diproses</p>
         </div>
     </div>
 
@@ -82,7 +87,7 @@
                 <span id="masterStatusBadge" class="text-slate-500 block w-full sm:w-auto mt-1 sm:mt-0"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat kamus...</span>
             </div>
 
-            <!-- Unduh Sesuai Jenis Laporan & SKPD -->
+            <!-- Filter Unduh Laporan -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <select id="downloadJenisFilter" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500">
@@ -142,7 +147,7 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- FITUR BARU: MONITORING KEPATUHAN PENGINPUTAN SKPD & DIAGRAM BULAT          -->
+        <!-- PANEL MONITORING KEPATUHAN INPUT SKPD & DIAGRAM BULAT NATIVE SVG          -->
         <!-- ========================================================================= -->
         <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
@@ -153,14 +158,14 @@
                         </span>
                         <h2 class="font-bold text-slate-800 text-base sm:text-lg">Monitoring Kepatuhan Penginputan SKPD</h2>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Klik pada diagram bulat atau kartu di bawah ini untuk melihat rincian nama-nama SKPD.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Klik diagram bulat atau kartu di bawah untuk melihat rincian nama-nama SKPD.</p>
                 </div>
                 <button type="button" onclick="openSkpdDetailsModal('SEMUA')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-list-check"></i> Buka Rincian Lengkap SKPD
                 </button>
             </div>
 
-            <!-- Kartu Metrik Kategori SKPD -->
+            <!-- 4 Kartu Metrik Kategori -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <!-- Badan & Dinas -->
                 <div onclick="openSkpdDetailsModal('DINAS_BADAN_SUDAH')" class="p-3.5 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 border border-blue-200/80 rounded-xl cursor-pointer hover:shadow-md transition active:scale-95 group">
@@ -192,7 +197,7 @@
                     </div>
                 </div>
 
-                <!-- Bagian / Setda -->
+                <!-- Bagian (Setda) -->
                 <div onclick="openSkpdDetailsModal('BAGIAN_SUDAH')" class="p-3.5 bg-gradient-to-br from-purple-50/70 to-fuchsia-50/40 border border-purple-200/80 rounded-xl cursor-pointer hover:shadow-md transition active:scale-95 group">
                     <div class="flex items-center justify-between text-purple-700 mb-1">
                         <span class="text-[11px] font-bold uppercase tracking-wider">Bagian (Setda)</span>
@@ -218,36 +223,75 @@
                         <span id="metricTotalSkpdSemua" class="text-xs text-rose-600 font-semibold">/ 0 SKPD</span>
                     </div>
                     <div class="mt-2 text-[10px] font-bold text-rose-600 flex items-center gap-1">
-                        <i class="fa-solid fa-hand-pointer"></i> <span>Klik lihat daftar SKPD</span>
+                        <i class="fa-solid fa-hand-pointer"></i> <span>Klik lihat rincian</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Tampilan Diagram Bulat Bersanding -->
+            <!-- Tampilan Diagram Bulat Bersanding (Native SVG) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <!-- Diagram Bulat 1: Status Input Global -->
                 <div class="bg-slate-50 border border-slate-200/80 p-4 rounded-xl flex flex-col items-center">
                     <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide text-center">Status Penginputan Seluruh SKPD</h3>
-                    <div class="relative w-48 h-48 sm:w-52 sm:h-52">
-                        <canvas id="chartInputStatus"></canvas>
+                    
+                    <div class="relative w-48 h-48 flex items-center justify-center">
+                        <svg viewBox="0 0 160 160" class="w-full h-full transform -rotate-90">
+                            <!-- Background Lingkaran Belum Input (Merah) -->
+                            <circle id="donutBgStatus" cx="80" cy="80" r="55" fill="transparent" stroke="#f43f5e" stroke-width="20" class="cursor-pointer donut-segment" onclick="openSkpdDetailsModal('BELUM')"></circle>
+                            <!-- Foreground Lingkaran Sudah Input (Hijau) -->
+                            <circle id="donutFgStatus" cx="80" cy="80" r="55" fill="transparent" stroke="#10b981" stroke-width="20" stroke-dasharray="0 345.58" stroke-dashoffset="0" class="cursor-pointer donut-segment" onclick="openSkpdDetailsModal('SUDAH')"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="svgStatusPercent" class="text-2xl font-black text-slate-800">0%</span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">SUDAH INPUT</span>
+                        </div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2 text-center">
-                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>Sudah Input
-                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 ml-3 mr-1"></span>Belum Input
-                    </p>
+
+                    <div class="flex items-center justify-center gap-4 text-[11px] text-slate-600 mt-2">
+                        <button type="button" onclick="openSkpdDetailsModal('SUDAH')" class="hover:underline flex items-center gap-1.5 cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                            <span>Sudah: <strong id="legendSudahVal">0</strong></span>
+                        </button>
+                        <button type="button" onclick="openSkpdDetailsModal('BELUM')" class="hover:underline flex items-center gap-1.5 cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+                            <span>Belum: <strong id="legendBelumVal">0</strong></span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Diagram Bulat 2: Komposisi yang Sudah Input -->
                 <div class="bg-slate-50 border border-slate-200/80 p-4 rounded-xl flex flex-col items-center">
                     <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide text-center">Komposisi Unit yang Sudah Menginput</h3>
-                    <div class="relative w-48 h-48 sm:w-52 sm:h-52">
-                        <canvas id="chartUnitCategory"></canvas>
+                    
+                    <div class="relative w-48 h-48 flex items-center justify-center">
+                        <svg viewBox="0 0 160 160" class="w-full h-full transform -rotate-90">
+                            <!-- Arc 1: Dinas & Badan (Biru) -->
+                            <circle id="donutCatDinas" cx="80" cy="80" r="55" fill="transparent" stroke="#3b82f6" stroke-width="20" stroke-dasharray="0 345.58" stroke-dashoffset="0" class="cursor-pointer donut-segment" onclick="openSkpdDetailsModal('DINAS_BADAN_SUDAH')"></circle>
+                            <!-- Arc 2: Kecamatan (Hijau) -->
+                            <circle id="donutCatKec" cx="80" cy="80" r="55" fill="transparent" stroke="#10b981" stroke-width="20" stroke-dasharray="0 345.58" stroke-dashoffset="0" class="cursor-pointer donut-segment" onclick="openSkpdDetailsModal('KECAMATAN_SUDAH')"></circle>
+                            <!-- Arc 3: Bagian (Ungu) -->
+                            <circle id="donutCatBagian" cx="80" cy="80" r="55" fill="transparent" stroke="#a855f7" stroke-width="20" stroke-dasharray="0 345.58" stroke-dashoffset="0" class="cursor-pointer donut-segment" onclick="openSkpdDetailsModal('BAGIAN_SUDAH')"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="svgCategoryTotal" class="text-2xl font-black text-slate-800">0</span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">UNIT AKTIF</span>
+                        </div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2 text-center">
-                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 mr-1"></span>Dinas/Badan
-                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 ml-2 mr-1"></span>Kecamatan
-                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-purple-500 ml-2 mr-1"></span>Bagian
-                    </p>
+
+                    <div class="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-600 mt-2">
+                        <button type="button" onclick="openSkpdDetailsModal('DINAS_BADAN_SUDAH')" class="hover:underline flex items-center gap-1 cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                            <span>Dinas/Badan: <strong id="legendDinasVal">0</strong></span>
+                        </button>
+                        <button type="button" onclick="openSkpdDetailsModal('KECAMATAN_SUDAH')" class="hover:underline flex items-center gap-1 cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                            <span>Kecamatan: <strong id="legendKecVal">0</strong></span>
+                        </button>
+                        <button type="button" onclick="openSkpdDetailsModal('BAGIAN_SUDAH')" class="hover:underline flex items-center gap-1 cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
+                            <span>Bagian: <strong id="legendBagianVal">0</strong></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -262,7 +306,7 @@
             </button>
         </div>
 
-        <!-- Grid Layout Form & Tabel -->
+        <!-- Grid Layout Form & Tabel Usulan -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
             
             <!-- FORMULIR INPUT (4 Kolom) -->
@@ -280,7 +324,7 @@
                 <form id="rkbmForm" class="space-y-3.5 sm:space-y-4">
                     <input type="hidden" id="editId" value="">
 
-                    <!-- Jenis Usulan: RKBMD vs RKPBMD -->
+                    <!-- Jenis Usulan -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jenis Usulan <span class="text-red-500">*</span></label>
                         <select id="jenisUsulan" onchange="togglePemeliharaanFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white" required>
@@ -315,7 +359,7 @@
                         </div>
                     </div>
 
-                    <!-- KOTAK KHUSUS PEMELIHARAAN (OTOMATIS MUNCUL SAAT RKPBMD) -->
+                    <!-- Kotak RKPBMD -->
                     <div id="extraPemeliharaanBox" class="hidden p-3.5 bg-amber-50/80 rounded-xl border border-amber-200 space-y-3 transition-all duration-200">
                         <div class="flex items-center gap-1.5 text-amber-900 font-bold text-xs border-b border-amber-200/70 pb-2">
                             <i class="fa-solid fa-file-circle-check text-amber-600"></i> Rincian Aset KIB yang Dipelihara
@@ -362,7 +406,7 @@
                         <input type="number" id="hargaSatuan" min="0" inputmode="numeric" placeholder="0" oninput="calculateTotal()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white" required>
                     </div>
 
-                    <!-- Total Otomatis -->
+                    <!-- Total Estimasi Anggaran -->
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
                         <span class="block text-[11px] font-bold text-slate-500 uppercase">Total Estimasi Anggaran (Otomatis)</span>
                         <div id="labelTotalAnggaran" class="text-base sm:text-lg font-bold text-emerald-600 mt-0.5">Rp 0</div>
@@ -431,7 +475,6 @@
                     </div>
                 </div>
 
-                <!-- Bagian Bawah Info & Copyright -->
                 <div class="pt-4 border-t border-slate-100 space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
                         <span id="recordCountInfo">Menampilkan 0 usulan</span>
@@ -554,7 +597,7 @@
                     <h4 class="font-bold text-xs text-amber-900">Upload Master Masal dari File Excel</h4>
                     <p class="text-[11px] text-amber-700 mt-0.5">Format file Excel Sheet: <code>Master_SKPD</code> & <code>Master_Barang</code></p>
                 </div>
-                <input type="file" id="masterExcelInput" accept=".xlsx, .xls" class="hidden" onchange="handleMasterExcelUpload(event)">
+                <input type="file" id="masterExcelInput" accept=".xlsx, .xls" class="hidden">
                 <button type="button" onclick="document.getElementById('masterExcelInput').click()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl shrink-0 cursor-pointer">
                     <i class="fa-solid fa-file-excel mr-1"></i> Pilih File Excel Master
                 </button>
@@ -588,9 +631,9 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT APLIKASI LENGKAP -->
+    <!-- SCRIPT JAVASCRIPT LENGKAP -->
     <script>
-        // URL APLIKASI WEB GOOGLE APPS SCRIPT:
+        // URL APLIKASI WEB GOOGLE APPS SCRIPT ANDA (PERSIS DENGAN REPO 1):
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwG1URNYVmPsdpM8Tsfg-ZoOWXGPodtG1wki9uVdK2hAlZ2VsT73DeT9lLu1muqAQht/exec";
 
         let verifiedSessionPin = "";
@@ -600,16 +643,9 @@
             barangList: []
         };
 
-        // Instansiasi Chart.js
-        let chartStatusInstance = null;
-        let chartCategoryInstance = null;
-
-        // Status Modal Filter
         let activeSkpdModalFilter = "SEMUA";
 
-        // =========================================================================
-        // PENGELOMPOKAN KATEGORI SKPD: DINAS & BADAN / KECAMATAN / BAGIAN
-        // =========================================================================
+        // Pengelompokan Kategori SKPD
         function categorizeSkpd(name) {
             const upper = String(name || '').toUpperCase().trim();
             if (upper.includes('KECAMATAN') || upper.startsWith('KEC.')) {
@@ -618,10 +654,7 @@
             if (upper.includes('BAGIAN') || upper.includes('SETDA') || upper.includes('SEKRETARIAT DAERAH') || upper.includes('SEKRETARIAT DPRD') || upper.includes('SEKWAN')) {
                 return 'Bagian';
             }
-            if (upper.includes('DINAS') || upper.includes('BADAN') || upper.includes('INSPEKTORAT') || upper.includes('SATPOL') || upper.includes('RSUD')) {
-                return 'Badan & Dinas';
-            }
-            return 'Badan & Dinas'; // Default ke dinas/badan/satuan kerja
+            return 'Badan & Dinas';
         }
 
         function togglePemeliharaanFields() {
@@ -647,15 +680,15 @@
             const btnTable = document.getElementById('tabBtnTable');
 
             if (tab === 'form') {
-                formSection.classList.remove('hidden');
-                tableSection.classList.add('hidden');
-                btnForm.className = "flex-1 py-2.5 rounded-lg bg-white shadow-xs text-blue-700 transition flex items-center justify-center gap-1.5 cursor-pointer";
-                btnTable.className = "flex-1 py-2.5 rounded-lg text-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer";
+                formSection?.classList.remove('hidden');
+                tableSection?.classList.add('hidden');
+                if (btnForm) btnForm.className = "flex-1 py-2.5 rounded-lg bg-white shadow-xs text-blue-700 transition flex items-center justify-center gap-1.5 cursor-pointer";
+                if (btnTable) btnTable.className = "flex-1 py-2.5 rounded-lg text-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer";
             } else {
-                formSection.classList.add('hidden');
-                tableSection.classList.remove('hidden');
-                btnTable.className = "flex-1 py-2.5 rounded-lg bg-white shadow-xs text-blue-700 transition flex items-center justify-center gap-1.5 cursor-pointer";
-                btnForm.className = "flex-1 py-2.5 rounded-lg text-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer";
+                formSection?.classList.add('hidden');
+                tableSection?.classList.remove('hidden');
+                if (btnTable) btnTable.className = "flex-1 py-2.5 rounded-lg bg-white shadow-xs text-blue-700 transition flex items-center justify-center gap-1.5 cursor-pointer";
+                if (btnForm) btnForm.className = "flex-1 py-2.5 rounded-lg text-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer";
             }
         }
 
@@ -758,6 +791,7 @@
             updateSkpdComplianceAnalytics();
         }
 
+        // FUNGSI LOAD MASTER DARI GOOGLE APPS SCRIPT (ASLI & AMAN)
         async function loadMasterFromSheets() {
             const url = getCleanUrl();
             if (url.includes("CONTOH_GANTI_DENGAN_URL_ANDA")) {
@@ -765,7 +799,7 @@
                 return;
             }
 
-            safeSetHTML('masterStatusBadge', '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat master...');
+            safeSetHTML('masterStatusBadge', '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat kamus...');
 
             try {
                 const res = await fetch(`${url}?action=read_master`);
@@ -774,6 +808,8 @@
                     masterData.skpdList = json.skpdList || [];
                     masterData.barangList = json.barangList || [];
                     populateDatalists();
+                } else {
+                    safeSetHTML('masterStatusBadge', '<span class="text-rose-500">Kamus kosong / gagal</span>');
                 }
             } catch (err) {
                 console.warn("Gagal memuat master:", err);
@@ -781,6 +817,7 @@
             }
         }
 
+        // FUNGSI LOAD DATA USULAN DARI DATABASE SPREADSHEET
         async function loadDataFromSheets() {
             const tbody = document.getElementById('tableBody');
             const mobileCards = document.getElementById('mobileCardsContainer');
@@ -827,16 +864,14 @@
         }
 
         // =========================================================================
-        // LOGIKA PERHITUNGAN KEPATUHAN & PEMBUATAN DIAGRAM BULAT
+        // PENGHITUNG KEPATUHAN & DIAGRAM BULAT NATIVE SVG (TANPA LIBRARY LUAR)
         // =========================================================================
         function getSkpdComplianceData() {
-            // Dapatkan seluruh daftar SKPD unik dari master, atau dari data usulan jika master belum ada
             let allSkpds = [...new Set(masterData.skpdList)];
             if (allSkpds.length === 0) {
                 allSkpds = [...new Set(usulanDb.map(u => String(u.skpd).trim()))].filter(Boolean);
             }
 
-            // Kumpulkan usulan per SKPD
             const skpdUsageMap = {};
             usulanDb.forEach(item => {
                 const sName = String(item.skpd || '').trim();
@@ -848,7 +883,6 @@
                 skpdUsageMap[sName].totalBudget += (Number(item.anggaran) || 0);
             });
 
-            // Olah status setiap SKPD
             const detailedList = allSkpds.map(skpdName => {
                 const category = categorizeSkpd(skpdName);
                 const isSubmitted = Boolean(skpdUsageMap[skpdName] && skpdUsageMap[skpdName].count > 0);
@@ -864,7 +898,6 @@
                 };
             });
 
-            // Hitung metrik per kategori
             const dinasTotal = detailedList.filter(d => d.category === 'Badan & Dinas');
             const dinasSudah = dinasTotal.filter(d => d.hasSubmitted);
 
@@ -894,7 +927,7 @@
             const data = getSkpdComplianceData();
             const m = data.metrics;
 
-            // Update Angka Metrik
+            // Update Angka Metrik Kartu
             safeSetText('metricDinasSudah', m.dinas.sudah);
             safeSetText('metricDinasTotal', `/ ${m.dinas.total} Unit`);
             const pDinas = m.dinas.total ? Math.round((m.dinas.sudah / m.dinas.total) * 100) : 0;
@@ -913,164 +946,651 @@
             safeSetText('metricBelumInput', m.totalBelum);
             safeSetText('metricTotalSkpdSemua', `/ ${m.totalSemua} SKPD`);
 
-            // Update Badge Jumlah pada Modal
+            // Update Badge Jumlah Pada Modal
             safeSetText('countModalSemua', m.totalSemua);
             safeSetText('countModalBelum', m.totalBelum);
             safeSetText('countModalSudah', m.totalSudah);
 
-            // Render Chart 1: Status Input (Sudah vs Belum)
-            renderChartStatus(m.totalSudah, m.totalBelum);
+            safeSetText('legendSudahVal', m.totalSudah);
+            safeSetText('legendBelumVal', m.totalBelum);
+            safeSetText('legendDinasVal', m.dinas.sudah);
+            safeSetText('legendKecVal', m.kecamatan.sudah);
+            safeSetText('legendBagianVal', m.bagian.sudah);
 
-            // Render Chart 2: Komposisi yang sudah menginput
-            renderChartCategory(m.dinas.sudah, m.kecamatan.sudah, m.bagian.sudah);
-        }
+            // RENDER DIAGRAM BULAT NATIVE SVG 1: SUDAH VS BELUM
+            const circumference = 2 * Math.PI * 55; // keliling lingkaran r=55 -> 345.58
+            const pctSudah = m.totalSemua > 0 ? Math.round((m.totalSudah / m.totalSemua) * 100) : 0;
+            safeSetText('svgStatusPercent', `${pctSudah}%`);
 
-        function renderChartStatus(sudah, belum) {
-            const ctx = document.getElementById('chartInputStatus')?.getContext('2d');
-            if (!ctx) return;
-
-            if (chartStatusInstance) {
-                chartStatusInstance.destroy();
+            const fgStatus = document.getElementById('donutFgStatus');
+            if (fgStatus) {
+                const sudahDash = (m.totalSudah / (m.totalSemua || 1)) * circumference;
+                fgStatus.setAttribute('stroke-dasharray', `${sudahDash} ${circumference}`);
             }
 
-            const total = sudah + belum;
-            const pctSudah = total > 0 ? Math.round((sudah / total) * 100) : 0;
+            // RENDER DIAGRAM BULAT NATIVE SVG 2: KOMPOSISI YANG SUDAH INPUT
+            const totalAktif = m.dinas.sudah + m.kecamatan.sudah + m.bagian.sudah;
+            safeSetText('svgCategoryTotal', totalAktif);
 
-            chartStatusInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Sudah Input', 'Belum Input'],
-                    datasets: [{
-                        data: [sudah, belum],
-                        backgroundColor: ['#10b981', '#f43f5e'],
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed;
-                                    const p = total > 0 ? Math.round((val / total) * 100) : 0;
-                                    return ` ${context.label}: ${val} SKPD (${p}%)`;
-                                }
-                            }
-                        }
-                    },
-                    onClick: (evt, elements) => {
-                        if (elements.length > 0) {
-                            const idx = elements[0].index;
-                            if (idx === 0) openSkpdDetailsModal('SUDAH');
-                            else openSkpdDetailsModal('BELUM');
-                        } else {
-                            openSkpdDetailsModal('SEMUA');
-                        }
-                    }
-                },
-                plugins: [{
-                    id: 'textCenter',
-                    beforeDraw(chart) {
-                        const { width, height, ctx } = chart;
-                        ctx.save();
-                        ctx.font = 'bold 22px system-ui';
-                        ctx.fillStyle = '#0f172a';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(`${pctSudah}%`, width / 2, height / 2 - 4);
+            const arcDinas = document.getElementById('donutCatDinas');
+            const arcKec = document.getElementById('donutCatKec');
+            const arcBagian = document.getElementById('donutCatBagian');
 
-                        ctx.font = '600 10px system-ui';
-                        ctx.fillStyle = '#64748b';
-                        ctx.fillText('SUDAH INPUT', width / 2, height / 2 + 16);
-                        ctx.restore();
-                    }
-                }]
-            });
-        }
+            if (arcDinas && arcKec && arcBagian) {
+                if (totalAktif === 0) {
+                    arcDinas.setAttribute('stroke-dasharray', `0 ${circumference}`);
+                    arcKec.setAttribute('stroke-dasharray', `0 ${circumference}`);
+                    arcBagian.setAttribute('stroke-dasharray', `0 ${circumference}`);
+                } else {
+                    const lenDinas = (m.dinas.sudah / totalAktif) * circumference;
+                    const lenKec = (m.kecamatan.sudah / totalAktif) * circumference;
+                    const lenBagian = (m.bagian.sudah / totalAktif) * circumference;
 
-        function renderChartCategory(dinas, kec, bagian) {
-            const ctx = document.getElementById('chartUnitCategory')?.getContext('2d');
-            if (!ctx) return;
+                    arcDinas.setAttribute('stroke-dasharray', `${lenDinas} ${circumference}`);
+                    arcDinas.setAttribute('stroke-dashoffset', '0');
 
-            if (chartCategoryInstance) {
-                chartCategoryInstance.destroy();
+                    arcKec.setAttribute('stroke-dasharray', `${lenKec} ${circumference}`);
+                    arcKec.setAttribute('stroke-dashoffset', `-${lenDinas}`);
+
+                    arcBagian.setAttribute('stroke-dasharray', `${lenBagian} ${circumference}`);
+                    arcBagian.setAttribute('stroke-dashoffset', `-${lenDinas + lenKec}`);
+                }
             }
-
-            const total = dinas + kec + bagian;
-
-            chartCategoryInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Badan & Dinas', 'Kecamatan', 'Bagian (Setda)'],
-                    datasets: [{
-                        data: [dinas, kec, bagian],
-                        backgroundColor: ['#3b82f6', '#10b981', '#a855f7'],
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed;
-                                    const p = total > 0 ? Math.round((val / total) * 100) : 0;
-                                    return ` ${context.label}: ${val} Unit (${p}%)`;
-                                }
-                            }
-                        }
-                    },
-                    onClick: (evt, elements) => {
-                        if (elements.length > 0) {
-                            const idx = elements[0].index;
-                            if (idx === 0) openSkpdDetailsModal('DINAS_BADAN_SUDAH');
-                            else if (idx === 1) openSkpdDetailsModal('KECAMATAN_SUDAH');
-                            else if (idx === 2) openSkpdDetailsModal('BAGIAN_SUDAH');
-                        } else {
-                            openSkpdDetailsModal('SUDAH');
-                        }
-                    }
-                },
-                plugins: [{
-                    id: 'textCenterCat',
-                    beforeDraw(chart) {
-                        const { width, height, ctx } = chart;
-                        ctx.save();
-                        ctx.font = 'bold 22px system-ui';
-                        ctx.fillStyle = '#0f172a';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(`${total}`, width / 2, height / 2 - 4);
-
-                        ctx.font = '600 10px system-ui';
-                        ctx.fillStyle = '#64748b';
-                        ctx.fillText('TOTAL AKTIF', width / 2, height / 2 + 16);
-                        ctx.restore();
-                    }
-                }]
-            });
         }
 
         // =========================================================================
-        // MODAL RINCIAN SKPD: BUKA, FILTER, & RENDERING TABEL
+        // MODAL RINCIAN STATUS SKPD
         // =========================================================================
         function openSkpdDetailsModal(filterKey = "SEMUA") {
             activeSkpdModalFilter = filterKey;
-            
-            // Highlight tab button
             updateModalFilterTabsUI(filterKey);
             
             const searchInput = document.getElementById('searchSkpdModalInput');
-            if (searchIn
+            if (searchInput) searchInput.value = "";
+
+            renderSkpdModalTable();
+            document.getElementById('skpdDetailModal')?.classList.remove('hidden');
+        }
+
+        function closeSkpdDetailsModal() {
+            document.getElementById('skpdDetailModal')?.classList.add('hidden');
+        }
+
+        function filterSkpdModalTable(filterKey) {
+            activeSkpdModalFilter = filterKey;
+            updateModalFilterTabsUI(filterKey);
+            renderSkpdModalTable();
+        }
+
+        function updateModalFilterTabsUI(activeKey) {
+            const buttons = document.querySelectorAll('.filter-tab-btn');
+            buttons.forEach(btn => {
+                const btnKey = btn.getAttribute('data-filter');
+                if (btnKey === activeKey || (activeKey.startsWith(btnKey) && btnKey !== 'SEMUA')) {
+                    btn.className = "filter-tab-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold cursor-pointer";
+                } else {
+                    btn.className = "filter-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer";
+                }
+            });
+        }
+
+        function renderSkpdModalTable() {
+            const tbody = document.getElementById('skpdModalTableBody');
+            const summaryText = document.getElementById('skpdModalSummaryText');
+            if (!tbody) return;
+
+            const compliance = getSkpdComplianceData();
+            const keyword = (document.getElementById('searchSkpdModalInput')?.value || '').toLowerCase().trim();
+
+            const filtered = compliance.allList.filter(item => {
+                let passFilter = true;
+                if (activeSkpdModalFilter === 'BELUM') passFilter = !item.hasSubmitted;
+                else if (activeSkpdModalFilter === 'SUDAH') passFilter = item.hasSubmitted;
+                else if (activeSkpdModalFilter === 'DINAS_BADAN') passFilter = item.category === 'Badan & Dinas';
+                else if (activeSkpdModalFilter === 'DINAS_BADAN_SUDAH') passFilter = item.category === 'Badan & Dinas' && item.hasSubmitted;
+                else if (activeSkpdModalFilter === 'KECAMATAN') passFilter = item.category === 'Kecamatan';
+                else if (activeSkpdModalFilter === 'KECAMATAN_SUDAH') passFilter = item.category === 'Kecamatan' && item.hasSubmitted;
+                else if (activeSkpdModalFilter === 'BAGIAN') passFilter = item.category === 'Bagian';
+                else if (activeSkpdModalFilter === 'BAGIAN_SUDAH') passFilter = item.category === 'Bagian' && item.hasSubmitted;
+
+                const passKeyword = item.name.toLowerCase().includes(keyword) || item.category.toLowerCase().includes(keyword);
+                return passFilter && passKeyword;
+            });
+
+            if (summaryText) {
+                summaryText.innerText = `Menampilkan ${filtered.length} dari total ${compliance.allList.length} unit kerja`;
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Tidak ada unit kerja yang sesuai kriteria filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtered.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                const statusBadge = item.hasSubmitted 
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <i class="fa-solid fa-check-circle"></i> Sudah Input
+                       </span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <i class="fa-solid fa-clock"></i> Belum Input
+                       </span>`;
+
+                let catBadgeColor = "bg-blue-50 text-blue-700 border-blue-200";
+                if (item.category === 'Kecamatan') catBadgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                if (item.category === 'Bagian') catBadgeColor = "bg-purple-50 text-purple-700 border-purple-200";
+
+                tr.innerHTML = `
+                    <td class="p-3 text-center text-slate-400 font-mono">${index + 1}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-slate-800 text-xs sm:text-sm">${item.name}</div>
+                    </td>
+                    <td class="p-3">
+                        <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded border ${catBadgeColor}">${item.category}</span>
+                    </td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                    <td class="p-3 text-center font-bold ${item.count > 0 ? 'text-slate-800' : 'text-slate-400'}">${item.count}</td>
+                    <td class="p-3 text-right font-bold ${item.totalBudget > 0 ? 'text-emerald-600' : 'text-slate-400'}">${item.totalBudget > 0 ? formatIDR(item.totalBudget) : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Ekspor Rekap Kepatuhan SKPD ke Excel
+        function exportSkpdMonitoringExcel() {
+            const compliance = getSkpdComplianceData();
+            if (compliance.allList.length === 0) {
+                showToast("Tidak ada data untuk diekspor!", true);
+                return;
+            }
+
+            const rows = compliance.allList.map((item, idx) => ({
+                "No": idx + 1,
+                "Nama SKPD / Unit Kerja": item.name,
+                "Kategori Unit": item.category,
+                "Status Penginputan": item.hasSubmitted ? "SUDAH INPUT" : "BELUM INPUT",
+                "Jumlah Usulan Masuk": item.count,
+                "Total Usulan Anggaran (Rp)": item.totalBudget
+            }));
+
+            const today = new Date().toISOString().slice(0, 10);
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Status_Kepatuhan_SKPD");
+            XLSX.writeFile(wb, `Rekap_Kepatuhan_SKPD_Konawe_${today}.xlsx`);
+            showToast("Rekap kepatuhan SKPD berhasil diunduh!");
+        }
+
+        // =========================================================================
+        // RENDERING TABEL UTAMA USULAN & FILTER
+        // =========================================================================
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const mobileCards = document.getElementById('mobileCardsContainer');
+
+            const keyword = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+            const filterJenis = document.getElementById('filterJenis')?.value || '';
+
+            const filtered = usulanDb.filter(item => {
+                const matchKeyword = 
+                    String(item.namaBarang || '').toLowerCase().includes(keyword) ||
+                    String(item.skpd || '').toLowerCase().includes(keyword) ||
+                    String(item.kodeBarang || '').toLowerCase().includes(keyword) ||
+                    String(item.noRegister || '').toLowerCase().includes(keyword);
+                const matchFilter = filterJenis === '' ? true : String(item.jenisUsulan).includes(filterJenis);
+                return matchKeyword && matchFilter;
+            });
+
+            safeSetText('recordCountInfo', `Menampilkan ${filtered.length} dari total ${usulanDb.length} usulan`);
+
+            if (filtered.length === 0) {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">Belum ada usulan yang cocok.</td></tr>`;
+                if (mobileCards) mobileCards.innerHTML = `<div class="p-8 text-center text-slate-400 italic text-xs bg-slate-50 rounded-xl border border-slate-200">Belum ada usulan yang cocok.</div>`;
+                return;
+            }
+
+            if (tbody) {
+                tbody.innerHTML = '';
+                filtered.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                    const isPemeliharaan = String(item.jenisUsulan).includes("RKPBMD") || String(item.jenisUsulan).includes("Pemeliharaan");
+                    const badgeColor = isPemeliharaan ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200";
+
+                    const extraInfo = isPemeliharaan && item.noRegister && item.noRegister !== "-" ? `
+                        <div class="text-[10px] text-amber-800 bg-amber-50/80 px-1.5 py-0.5 rounded mt-1 inline-block border border-amber-200">
+                            Reg: <strong>${item.noRegister}</strong> | Thn: <strong>${item.tahunPerolehan || '-'}</strong>
+                        </div>
+                    ` : '';
+
+                    tr.innerHTML = `
+                        <td class="p-3 text-center text-slate-400 font-mono">${index + 1}</td>
+                        <td class="p-3">
+                            <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeColor} mb-1">${item.jenisUsulan}</span>
+                            <div class="font-medium text-slate-900">${item.skpd}</div>
+                        </td>
+                        <td class="p-3">
+                            <div class="font-bold text-slate-800">${item.namaBarang}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${item.kodeBarang || '-'}</div>
+                            ${extraInfo}
+                        </td>
+                        <td class="p-3 text-center font-semibold">${item.volume} <span class="text-[10px] text-slate-400 font-normal">${item.satuan}</span></td>
+                        <td class="p-3 text-right font-medium text-slate-600">${formatIDR(item.hargaSatuan)}</td>
+                        <td class="p-3 text-right font-bold text-emerald-600">${formatIDR(item.anggaran)}</td>
+                        <td class="p-3 text-center whitespace-nowrap space-x-1">
+                            <button onclick="editData('${item.id}')" title="Ubah" class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg cursor-pointer">
+                                <i class="fa-solid fa-pencil text-xs"></i>
+                            </button>
+                            <button onclick="deleteData('${item.id}')" title="Hapus" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg cursor-pointer">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            if (mobileCards) {
+                mobileCards.innerHTML = '';
+                filtered.forEach((item, index) => {
+                    const isPemeliharaan = String(item.jenisUsulan).includes("RKPBMD") || String(item.jenisUsulan).includes("Pemeliharaan");
+                    const badgeColor = isPemeliharaan ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200";
+
+                    const extraInfoMobile = isPemeliharaan && item.noRegister && item.noRegister !== "-" ? `
+                        <div class="text-[11px] text-amber-900 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 flex justify-between">
+                            <span>No. Reg: <strong>${item.noRegister}</strong></span>
+                            <span>Tahun: <strong>${item.tahunPerolehan || '-'}</strong></span>
+                        </div>
+                    ` : '';
+
+                    const card = document.createElement('div');
+                    card.className = "p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2.5 shadow-xs";
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start gap-2">
+                            <div>
+                                <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeColor} mb-1">${item.jenisUsulan}</span>
+                                <div class="font-bold text-slate-900 text-sm">${item.namaBarang}</div>
+                                <div class="text-[11px] text-slate-400 font-mono">${item.kodeBarang || '-'}</div>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-200">#${index + 1}</span>
+                        </div>
+
+                        ${extraInfoMobile}
+
+                        <div class="text-xs text-slate-600 flex justify-between items-center py-1 border-y border-slate-200/60">
+                            <div><i class="fa-solid fa-building text-slate-400 mr-1"></i>${item.skpd}</div>
+                            <div class="font-semibold text-slate-800">${item.volume} ${item.satuan}</div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-1">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Total Anggaran:</span>
+                                <span class="font-bold text-emerald-600 text-sm">${formatIDR(item.anggaran)}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="editData('${item.id}')" class="px-3 py-2 bg-amber-100 active:bg-amber-200 text-amber-700 text-xs font-bold rounded-lg flex items-center gap-1">
+                                    <i class="fa-solid fa-pencil"></i> Ubah
+                                </button>
+                                <button onclick="deleteData('${item.id}')" class="px-3 py-2 bg-rose-100 active:bg-rose-200 text-rose-700 text-xs font-bold rounded-lg flex items-center gap-1">
+                                    <i class="fa-solid fa-trash-can"></i> Hapus
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    mobileCards.appendChild(card);
+                });
+            }
+        }
+
+        // =========================================================================
+        // EKSPOR EXCEL LAPORAN TERFILTER
+        // =========================================================================
+        function exportToExcelFiltered() {
+            if (usulanDb.length === 0) {
+                showToast("Belum ada data usulan untuk diekspor!", true);
+                return;
+            }
+
+            const selectedJenis = document.getElementById('downloadJenisFilter')?.value || "SEMUA";
+            const selectedSkpd = document.getElementById('downloadSkpdFilter')?.value || "SEMUA";
+
+            const dataToExport = usulanDb.filter(item => {
+                const matchSkpd = selectedSkpd === "SEMUA" ? true : String(item.skpd).trim().toLowerCase() === selectedSkpd.trim().toLowerCase();
+                const matchJenis = selectedJenis === "SEMUA" ? true : String(item.jenisUsulan).toUpperCase().includes(selectedJenis.toUpperCase());
+                return matchSkpd && matchJenis;
+            });
+
+            if (dataToExport.length === 0) {
+                showToast(`Tidak ditemukan data untuk filter ${selectedJenis} - ${selectedSkpd}`, true);
+                return;
+            }
+
+            let rows = [];
+
+            if (selectedJenis === "RKBMD") {
+                rows = dataToExport.map((item, idx) => ({
+                    "No": idx + 1,
+                    "Tanggal Usulan": item.tanggal,
+                    "Jenis Usulan": item.jenisUsulan,
+                    "Nama SKPD": item.skpd,
+                    "Kode Barang": item.kodeBarang,
+                    "Nama Barang": item.namaBarang,
+                    "Jumlah / Volume Usulan": item.volume,
+                    "Satuan": item.satuan,
+                    "Harga Satuan (Rp)": item.hargaSatuan,
+                    "Total Anggaran Pengadaan (Rp)": item.anggaran,
+                    "Keterangan / Urgensi": item.keterangan || ""
+                }));
+            } else if (selectedJenis === "RKPBMD") {
+                rows = dataToExport.map((item, idx) => ({
+                    "No": idx + 1,
+                    "Tanggal Usulan": item.tanggal,
+                    "Jenis Usulan": item.jenisUsulan,
+                    "Nama SKPD": item.skpd,
+                    "Kode Barang": item.kodeBarang,
+                    "Nama Barang": item.namaBarang,
+                    "No. Register / ID KIB": item.noRegister || "-",
+                    "Tahun Perolehan": item.tahunPerolehan || "-",
+                    "Harga Perolehan Asal (Rp)": item.hargaPerolehan || 0,
+                    "Jumlah / Volume": item.volume,
+                    "Satuan": item.satuan,
+                    "Biaya Pemeliharaan Satuan (Rp)": item.hargaSatuan,
+                    "Total Biaya Pemeliharaan (Rp)": item.anggaran,
+                    "Keterangan Urgensi / Kerusakan": item.keterangan || ""
+                }));
+            } else {
+                rows = dataToExport.map((item, idx) => ({
+                    "No": idx + 1,
+                    "Tanggal Usulan": item.tanggal,
+                    "Jenis Usulan": item.jenisUsulan,
+                    "Nama SKPD": item.skpd,
+                    "Kode Barang": item.kodeBarang,
+                    "Nama Barang": item.namaBarang,
+                    "No. Register / ID Barang": item.noRegister || "-",
+                    "Tahun Perolehan": item.tahunPerolehan || "-",
+                    "Harga Perolehan Asal (Rp)": item.hargaPerolehan || 0,
+                    "Jumlah / Volume Usulan": item.volume,
+                    "Satuan": item.satuan,
+                    "Biaya Satuan Usulan (Rp)": item.hargaSatuan,
+                    "Total Estimasi Anggaran (Rp)": item.anggaran,
+                    "Keterangan / Urgensi": item.keterangan || ""
+                }));
+            }
+
+            const safeSkpd = selectedSkpd === "SEMUA" ? "Semua_SKPD" : selectedSkpd.replace(/[^a-zA-Z0-9]/g, "_");
+            const filePrefix = `Laporan_${selectedJenis}_${safeSkpd}`;
+            const today = new Date().toISOString().slice(0, 10);
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, selectedJenis);
+            XLSX.writeFile(wb, `${filePrefix}_${today}.xlsx`);
+        }
+
+        // =========================================================================
+        // ADMIN AUTH & MASTER HANDLERS
+        // =========================================================================
+        function openAdminAuthModal() {
+            document.getElementById('pinErrorMsg')?.classList.add('hidden');
+            const pinInput = document.getElementById('adminPinInput');
+            if (pinInput) pinInput.value = "";
+            document.getElementById('authModal')?.classList.remove('hidden');
+            pinInput?.focus();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal')?.classList.add('hidden');
+        }
+
+        async function verifyAdminPin() {
+            const inputPin = (document.getElementById('adminPinInput')?.value || "").trim();
+            if (!inputPin) return;
+
+            const btn = document.getElementById('btnVerifyPin');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa...`;
+
+            try {
+                const res = await fetch(`${getCleanUrl()}?action=verify_pin&pin=${encodeURIComponent(inputPin)}`);
+                const json = await res.json();
+
+                if (json.valid === true) {
+                    verifiedSessionPin = inputPin;
+                    closeAuthModal();
+                    document.getElementById('adminMasterModal')?.classList.remove('hidden');
+                } else {
+                    document.getElementById('pinErrorMsg')?.classList.remove('hidden');
+                }
+            } catch (err) {
+                alert("Gagal menghubungi server untuk verifikasi PIN.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Buka Menu`;
+            }
+        }
+
+        function closeAdminMasterModal() {
+            document.getElementById('adminMasterModal')?.classList.add('hidden');
+        }
+
+        async function addSingleSKPD() {
+            const val = (document.getElementById('newSkpdInput')?.value || '').trim();
+            if (!val) {
+                showToast("Ketik nama SKPD terlebih dahulu.", true);
+                return;
+            }
+            
+            const btn = document.getElementById('btnAddSkpdBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+
+            try {
+                await fetch(getCleanUrl(), {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "add_master_skpd", skpd: val, adminPin: verifiedSessionPin })
+                });
+
+                document.getElementById('newSkpdInput').value = "";
+                showToast(`SKPD "${val}" berhasil ditambahkan ke database!`);
+                await new Promise(r => setTimeout(r, 1200));
+                await loadMasterFromSheets();
+            } catch (err) {
+                showToast("Gagal menambahkan SKPD: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> + Simpan ke Database`;
+            }
+        }
+
+        async function addSingleBarang() {
+            const kode = (document.getElementById('newKodeBarangInput')?.value || '').trim();
+            const nama = (document.getElementById('newNamaBarangInput')?.value || '').trim();
+            if (!nama) {
+                showToast("Nama Barang tidak boleh kosong.", true);
+                return;
+            }
+
+            const btn = document.getElementById('btnAddBarangBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+
+            try {
+                await fetch(getCleanUrl(), {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "add_master_barang", kodeBarang: kode, namaBarang: nama, adminPin: verifiedSessionPin })
+                });
+
+                document.getElementById('newKodeBarangInput').value = "";
+                document.getElementById('newNamaBarangInput').value = "";
+                showToast(`Barang "${nama}" berhasil ditambahkan ke database!`);
+                await new Promise(r => setTimeout(r, 1200));
+                await loadMasterFromSheets();
+            } catch (err) {
+                showToast("Gagal menambahkan barang: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> + Simpan ke Database`;
+            }
+        }
+
+        function renderAdminPreviewLists() {
+            const skpdBox = document.getElementById('adminSkpdPreviewList');
+            if (skpdBox) {
+                skpdBox.innerHTML = `Total ${masterData.skpdList.length} SKPD di Database: ` + masterData.skpdList.slice(-5).join(', ') + '...';
+            }
+            const brgBox = document.getElementById('adminBarangPreviewList');
+            if (brgBox) {
+                brgBox.innerHTML = `Total ${masterData.barangList.length} Barang di Database: ` + masterData.barangList.slice(-3).map(b => b.nama).join(', ') + '...';
+            }
+        }
+
+        // SIMPAN / UPDATE USULAN
+        document.getElementById('rkbmForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const editId = document.getElementById('editId')?.value || "";
+            const isEditing = editId !== "";
+            const jenisUsulanVal = document.getElementById('jenisUsulan')?.value || "";
+
+            const payload = {
+                action: isEditing ? "update" : "create",
+                id: isEditing ? editId : 'ID-' + Date.now(),
+                jenisUsulan: jenisUsulanVal,
+                skpd: document.getElementById('skpd')?.value || "",
+                kodeBarang: document.getElementById('kodeBarang')?.value || "",
+                namaBarang: document.getElementById('namaBarang')?.value || "",
+                noRegister: jenisUsulanVal.includes("Pemeliharaan") ? (document.getElementById('noRegister')?.value || "-") : "-",
+                tahunPerolehan: jenisUsulanVal.includes("Pemeliharaan") ? (document.getElementById('tahunPerolehan')?.value || "-") : "-",
+                hargaPerolehan: jenisUsulanVal.includes("Pemeliharaan") ? (parseFloat(document.getElementById('hargaPerolehan')?.value) || 0) : 0,
+                volume: parseInt(document.getElementById('volume')?.value) || 0,
+                satuan: document.getElementById('satuan')?.value || "Unit",
+                hargaSatuan: parseFloat(document.getElementById('hargaSatuan')?.value) || 0,
+                anggaran: parseFloat(document.getElementById('anggaran')?.value) || 0,
+                keterangan: document.getElementById('keterangan')?.value || "",
+                tanggal: new Date().toISOString().split('T')[0]
+            };
+
+            const btnSubmit = document.getElementById('btnSubmit');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Menyimpan ke Database...`;
+            }
+
+            try {
+                await fetch(getCleanUrl(), {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                showToast("Data berhasil disimpan dalam database!");
+                resetForm();
+                await new Promise(r => setTimeout(r, 1200));
+                await loadDataFromSheets();
+                
+                if (window.innerWidth < 1024) {
+                    switchMobileTab('table');
+                }
+            } catch (err) {
+                showToast("Gagal menyimpan ke database: " + err.message, true);
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span id="btnSubmitText">Simpan ke Database</span>`;
+                }
+            }
+        });
+
+        function editData(id) {
+            const item = usulanDb.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            const setVal = (elmId, val) => {
+                const el = document.getElementById(elmId);
+                if (el) el.value = val;
+            };
+
+            setVal('editId', item.id);
+            setVal('jenisUsulan', item.jenisUsulan);
+            togglePemeliharaanFields();
+
+            setVal('skpd', item.skpd);
+            setVal('kodeBarang', item.kodeBarang || '');
+            setVal('namaBarang', item.namaBarang);
+            setVal('noRegister', item.noRegister || '');
+            setVal('tahunPerolehan', item.tahunPerolehan || '');
+            setVal('hargaPerolehan', item.hargaPerolehan || 0);
+
+            setVal('volume', item.volume);
+            setVal('satuan', item.satuan);
+            setVal('hargaSatuan', item.hargaSatuan || 0);
+            setVal('keterangan', item.keterangan || '');
+            
+            calculateTotal();
+
+            safeSetText('formTitle', "Edit Data Usulan");
+            safeSetText('formSubtitle', "Mengubah usulan: " + item.namaBarang);
+            safeSetText('btnSubmitText', "Simpan Perubahan ke Database");
+            
+            const btnCancel = document.getElementById('btnCancel');
+            if (btnCancel) btnCancel.classList.remove('hidden');
+
+            if (window.innerWidth < 1024) {
+                switchMobileTab('form');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteData(id) {
+            if (!confirm("Hapus usulan ini secara permanen dari database?")) return;
+
+            try {
+                await fetch(getCleanUrl(), {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "delete", id: id })
+                });
+                showToast("Data berhasil dihapus dari database!");
+                await new Promise(r => setTimeout(r, 1200));
+                await loadDataFromSheets();
+            } catch (err) {
+                showToast("Gagal menghapus data: " + err.message, true);
+            }
+        }
+
+        function resetForm() {
+            const form = document.getElementById('rkbmForm');
+            if (form) form.reset();
+
+            const editId = document.getElementById('editId');
+            if (editId) editId.value = "";
+
+            togglePemeliharaanFields();
+
+            safeSetText('labelTotalAnggaran', "Rp 0");
+            safeSetText('formTitle', "Tambah Data Usulan");
+            safeSetText('formSubtitle', "Data otomatis tersimpan ke database");
+            safeSetText('btnSubmitText', "Simpan ke Database");
+
+            const btnCancel = document.getElementById('btnCancel');
+            if (btnCancel) btnCancel.classList.add('hidden');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMasterFromSheets();
+            loadDataFromSheets();
+        });
+    </script>
+</body>
+</html>
